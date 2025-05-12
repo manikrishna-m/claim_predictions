@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prediction Dashboard</title>
+    <style>
+        :root {
+            --hiscox-blue: #005eb8;
+            --hiscox-dark-blue: #003c71;
+            --hiscox-light-gray: #f5f5f5;
+            --hiscox-medium-gray: #e0e0e0;
+            --hiscox-dark-gray: #333333;
+            --hiscox-accent: #ff8200;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--hiscox-light-gray);
+            margin: 0;
+            padding: 0;
+            color: var(--hiscox-dark-gray);
+        }
+
+        header {
+            background-color: var(--hiscox-blue);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .tabs {
+            display: flex;
+            background-color: white;
+            justify-content: center;
+            padding: 0;
+            border-bottom: 1px solid var(--hiscox-medium-gray);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tab {
+            padding: 1rem 2.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--hiscox-dark-gray);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .tab:hover {
+            color: var(--hiscox-blue);
+            background-color: var(--hiscox-light-gray);
+        }
+
+        .tab.active {
+            border-bottom: 3px solid var(--hiscox-blue);
+            color: var(--hiscox-blue);
+        }
+
+        .content {
+            display: none;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--hiscox-medium-gray);
+        }
+
+        th {
+            background-color: var(--hiscox-blue);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: var(--hiscox-light-gray);
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        form label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9rem;
+            font-weight: 500;
+            gap: 0.5rem;
+        }
+
+        input, select {
+            padding: 0.75rem;
+            font-size: 0.95rem;
+            border: 1px solid var(--hiscox-medium-gray);
+            border-radius: 4px;
+            transition: border 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--hiscox-blue);
+            box-shadow: 0 0 0 2px rgba(0,94,184,0.1);
+        }
+
+        button {
+            grid-column: 1 / -1;
+            justify-self: start;
+            margin-top: 1rem;
+            padding: 0.8rem 1.8rem;
+            background-color: var(--hiscox-blue);
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--hiscox-dark-blue);
+        }
+
+        #prediction-result {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: var(--hiscox-light-gray);
+            border-radius: 4px;
+            font-weight: 600;
+            text-align: center;
+            border-left: 4px solid var(--hiscox-accent);
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--hiscox-dark-gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .dashboard-title svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        }
+
+        async function fetchDailyPredictions() {
+            // Simulate loading
+            const table = document.getElementById('daily-table');
+            table.innerHTML = '<tr><td colspan="10" class="no-data">Loading predictions...</td></tr>';
+            
+            try {
+                const res = await fetch('/api/daily_predictions');
+                const data = await res.json();
+                table.innerHTML = '';
+
+
+                if (data.length === 0) {
+                    table.innerHTML = '<tr><td colspan="10" class="no-data">No predictions available for today</td></tr>';
+                    return;
+                }
+
+
+                const headers = ['age', 'income', 'prediction', 'probability'];
+                const headerRow = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                table.innerHTML += headerRow;
+
+                data.forEach(row => {
+                    const rowHTML = '<tr>' + headers.map(h => `<td>${row[h]}</td>`).join('') + '</tr>';
+                    table.innerHTML += rowHTML;
+                });
+            } catch (error) {
+                table.innerHTML = '<tr><td colspan="10" class="no-data">Error loading predictions</td></tr>';
+                console.error('Error fetching predictions:', error);
+            }
+        }
+
+        async function makePrediction(event) {
+            event.preventDefault();
+            const form = document.getElementById('predict-form');
+            const resultDiv = document.getElementById('prediction-result');
+            const button = form.querySelector('button');
+            
+            // Save original button text
+            const originalButtonText = button.textContent;
+            button.textContent = 'Predicting...';
+            button.disabled = true;
+            resultDiv.textContent = '';
+
+            try {
+                const formData = new FormData(form);
+                const data = {};
+                for (const [key, value] of formData.entries()) {
+                    data[key] = isNaN(value) ? value : parseFloat(value);
+                }
+
+                const res = await fetch('/api/manual_predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!res.ok) throw new Error('Prediction failed');
+
+                const result = await res.json();
+                resultDiv.innerHTML = `
+                    <strong>Prediction Result:</strong> ${result.prediction}<br>
+                    <strong>Probability:</strong> ${result.probability}
+                `;
+            } catch (error) {
+                resultDiv.textContent = 'Error making prediction. Please try again.';
+                console.error('Prediction error:', error);
+            } finally {
+                button.textContent = originalButtonText;
+                button.disabled = false;
+            }
+        }
+
+        window.onload = function () {
+            fetchDailyPredictions();
+            switchTab('tab-today');
+            
+            // Set up periodic refresh (every 5 minutes)
+            setInterval(fetchDailyPredictions, 300000);
+        };
+    </script>
+</head>
+<body>
+
+<header>
+    HISCOX Prediction Dashboard
+</header>
+
+<div class="tabs">
+    <div class="tab active" data-tab="tab-today" onclick="switchTab('tab-today')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Today's Predictions
+    </div>
+    <div class="tab" data-tab="tab-manual" onclick="switchTab('tab-manual')">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        Manual Prediction
+    </div>
+</div>
+
+<div class="content active" id="tab-today">
+    <div class="dashboard-title">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        Model Predictions
+    </div>
+    <table id="daily-table">
+        <tr><td class="no-data">Loading predictions...</td></tr>
+    </table>
+</div>
+
+<div class="content" id="tab-manual">
+    <div class="dashboard-title">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        Enter Prediction Parameters
+    </div>
+    <form id="predict-form" onsubmit="makePrediction(event)">
+        <label>Age: <input type="number" name="age" required min="18" max="95"></label>
+        <label>Height (cm): <input type="number" name="height_cm" required min="140" max="210"></label>
+        <label>Weight (kg): <input type="number" name="weight_kg" required min="45" max="125"></label>
+        <label>Income: <input type="number" name="income" required min="0" max="250000"></label>
+    
+        <label>Financial Hist 1: <input type="number" step="any" name="financial_hist_1" required></label>
+        <label>Financial Hist 2: <input type="number" step="any" name="financial_hist_2" required></label>
+        <label>Financial Hist 3: <input type="number" step="any" name="financial_hist_3" required></label>
+        <label>Financial Hist 4: <input type="number" step="any" name="financial_hist_4" required></label>
+    
+        <label>Credit Score 1: <input type="number" name="credit_score_1" required min="0" max="999"></label>
+        <label>Credit Score 2: <input type="number" name="credit_score_2" required min="0" max="700"></label>
+        <label>Credit Score 3: <input type="number" name="credit_score_3" required min="0" max="710"></label>
+    
+        <label>Insurance Hist 1: <input type="number" step="any" name="insurance_hist_1" required></label>
+        <label>Insurance Hist 2: <input type="number" step="any" name="insurance_hist_2" required></label>
+        <label>Insurance Hist 3: <input type="number" step="any" name="insurance_hist_3" required></label>
+        <label>Insurance Hist 4: <input type="number" step="any" name="insurance_hist_4" required></label>
+        <label>Insurance Hist 5: <input type="number" step="any" name="insurance_hist_5" required></label>
+    
+        <label>BMI: <input type="number" name="bmi" required></label>
+    
+        <label>Gender:
+            <select name="gender" required>
+                <option value="1">Female</option>
+                <option value="0">Male</option>
+            </select>
+        </label>
+    
+        <label>Marital Status:
+            <select name="marital_status" required>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+            </select>
+        </label>
+    
+        <label>Occupation:
+            <select name="occupation" required>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+            </select>
+        </label>
+    
+        <label>Location: <input type="text" name="location" required></label>
+    
+        <label>Prev Claim Rejected:
+            <select name="prev_claim_rejected" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Known Health Conditions:
+            <select name="known_health_conditions" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>UK Residence:
+            <select name="uk_residence" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Family History 1: 
+            <select name="family_history_1" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Family History 2: 
+            <select name="family_history_2" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Family History 3:
+            <select name="family_history_3" required>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+                <option value="">Unknown</option>
+            </select>
+        </label>
+    
+        <label>Family History 4:
+            <select name="family_history_4" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Family History 5:
+            <select name="family_history_5" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Product Var 1:
+            <select name="product_var_1" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Product Var 2:
+            <select name="product_var_2" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Product Var 3:
+            <select name="product_var_3" required>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+            </select>
+        </label>
+    
+        <label>Product Var 4:
+            <select name="product_var_4" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </label>
+    
+        <label>Health Status: <input type="number" name="health_status" required min="1" max="4"></label>
+        <label>Driving Record: <input type="number" name="driving_record" required min="1" max="4"></label>
+        <label>Previous Claim Rate:
+            <select name="previous_claim_rate" required>
+                <option value="1">Very Low</option>
+                <option value="2">Low</option>
+                <option value="3">Moderate</option>
+                <option value="4">High</option>
+                <option value="5">Very High</option>
+            </select>
+        </label>
+    
+        <label>Education Level:
+            <select name="education_level" required>
+                <option value="0">None</option>
+                <option value="1">Primary</option>
+                <option value="2">Secondary</option>
+                <option value="3">High School</option>
+                <option value="4">Bachelor’s</option>
+                <option value="5">Master’s</option>
+                <option value="6">PhD</option>
+            </select>
+        </label>
+    
+        <label>Income Level:
+            <select name="income_level" required>
+                <option value="0">Very Low</option>
+                <option value="1">Low</option>
+                <option value="2">Medium</option>
+                <option value="3">High</option>
+                <option value="4">Very High</option>
+            </select>
+        </label>
+    
+        <label>No. of Dependents: <input type="number" name="n_dependents" required min="0" max="5"></label>
+    
+        <label>Employment Type:
+            <select name="employment_type" required>
+                <option value="1">Employed</option>
+                <option value="0">Unemployed</option>
+                <option value="">Unknown</option>
+            </select>
+        </label>
+    
+        <button type="submit">Generate Prediction</button>
+        <div id="prediction-result"></div>
+    </form>
+    
+</div>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: monthly-retraining-job
+spec:
+  schedule: "0 3 1 * *"  # On the 1st of every month at 3:00 AM UTC
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: monthly-retrain
+              image: europe-west2-docker.pkg.dev/teak-serenity-396423/mlflow/ml-predictor:latest
+              command: ["python", "jobs/monthly_run.py"]
+          restartPolicy: OnFailure

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claims-deployment
+  labels:
+    app: claims-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claims-app
+  template:
+    metadata:
+      labels:
+        app: claims-app
+    spec:
+      containers:
+        - name: claims-container
+          image: europe-west2-docker.pkg.dev/teak-serenity-396423/mlflow/ml-predictor:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"

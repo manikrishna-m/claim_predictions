@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-prediction-job
+spec:
+  schedule: "0 2 * * *"  # Every day at 2:00 AM UTC
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: daily-predict
+              image: europe-west2-docker.pkg.dev/teak-serenity-396423/mlflow/ml-predictor:latest
+              command: ["python", "jobs/daily_run.py"]
+          restartPolicy: OnFailure
