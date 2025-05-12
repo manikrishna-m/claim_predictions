@@ -4,7 +4,6 @@ import yaml
 import glob
 import mlflow
 import pandas as pd
-import mlflow.xgboost
 import xgboost as xgb
 from datetime import datetime
 from mlflow.tracking import MlflowClient
