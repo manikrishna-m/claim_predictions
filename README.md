@@ -102,8 +102,7 @@ This project productionizes a machine learning model that predicts the likelihoo
 - Creating an API interface
 
 **Out of scope:**
-- Real-time inference
-- Model tuning or architecture changes
+- Improving data preprocessing steps or model performance
 - Building upstream ETL pipelines
 
 
