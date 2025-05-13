@@ -49,11 +49,6 @@ This project productionizes a machine learning model that predicts the likelihoo
 - Predictions and retraining need to be automated, stable, and interpretable
 - Data governance and quality are assumed to be handled upstream
 
-## Collaboration Requirements
-- Data Engineering: for ensuring daily and monthly data availability from the warehouse
-- DevOps/MLOps: for deployment, monitoring, and scaling on cloud infrastructure
-- Product/Claims Teams: for validating prediction thresholds and feature relevance
-
 ## CI/CD and Automation
 
 ### GitHub Actions
