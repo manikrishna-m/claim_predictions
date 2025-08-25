@@ -68,39 +68,6 @@ This project productionizes a machine learning model that predicts the likelihoo
 - Jobs triggered using K8s CronJobs
 - Optionally integrates with Artifact Registry to store the docker image
 
-## Answers to Key Questions
-
-### What assumptions are you making?
-- Data is available and clean before job runs
-- Timestamp exists for temporal filtering
-- Same data preprocessing and model logic is used for training and inference
-- Prediction output can be stored in a flat file or sent downstream
-
-### What are the business considerations?
-- Speed of delivery during the 2-week cooling-off period
-- Transparency of model predictions for underwriting
-- Consistency of retraining for model performance
-- Automation and minimal manual intervention
-
-### Who would you talk to?
-- Data Engineers for warehouse schema and availability SLAs
-- Data Scientist to incorporate their work properly
-- Project Manager to track the progress
-- Claims or Product Owners or Underwriting for validation of prediction utility
-
-### What is in scope vs. out of scope?
-
-**In scope:**
-- Refactoring notebook to modular pipeline
-- Automating batch prediction and retraining
-- Containerization, CI/CD, and deployment
-- Creating an API interface
-
-**Out of scope:**
-- Improving data preprocessing steps or model performance
-- Building upstream ETL pipelines
-
-
 ## Local Development Workflow
 
 ### Create virtual environment and install dependencies
